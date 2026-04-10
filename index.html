@@ -209,6 +209,7 @@
 
     <div class="toolbar">
         <button onclick="openEntryModal()">+ 予定を追加</button>
+        <button class="secondary" onclick="openOptionsModal()">⚙️ オプション</button>
         <button class="secondary" onclick="openSettingsModal()">⚙️ 黒マスの設定</button>
         <span style="flex-grow: 1;"></span>
         <button class="secondary" onclick="exportCSV()">保存(CSV)</button>
@@ -219,10 +220,7 @@
 
     <table id="scheduleTable">
         <thead>
-            <tr>
-                <th style="width: 80px;">時限</th>
-                <th>月曜日</th><th>火曜日</th><th>水曜日</th><th>木曜日</th><th>金曜日</th><th>土曜日</th>
-            </tr>
+            <tr id="dayHeaderRow"></tr>
         </thead>
         <tbody id="tableBody"></tbody>
     </table>
@@ -239,24 +237,11 @@
         </div>
         <div class="form-group">
             <label>曜日</label>
-            <select id="scheduleDay">
-                <option value="月">月曜日</option>
-                <option value="火">火曜日</option>
-                <option value="水">水曜日</option>
-                <option value="木">木曜日</option>
-                <option value="金">金曜日</option>
-                <option value="土">土曜日</option>
-            </select>
+            <select id="scheduleDay"></select>
         </div>
         <div class="form-group">
             <label>時限</label>
-            <select id="schedulePeriod">
-                <option value="1">1限</option>
-                <option value="2">2限</option>
-                <option value="3">3限</option>
-                <option value="4">4限</option>
-                <option value="5">5限</option>
-            </select>
+            <select id="schedulePeriod"></select>
         </div>
         <div class="modal-actions">
             <button class="secondary" onclick="closeModals()">キャンセル</button>
@@ -280,11 +265,30 @@
     </div>
 </div>
 
+<!-- Options Modal (Days/Periods) -->
+<div id="optionsModal" class="modal-overlay">
+    <div class="modal">
+        <h2>表示オプション</h2>
+        <div class="form-group">
+            <label>曜日（カンマ区切り）</label>
+            <input type="text" id="optionDays" placeholder="例: 月,火,水,木,金,土">
+        </div>
+        <div class="form-group">
+            <label>時限数（1-10）</label>
+            <input type="number" id="optionPeriodCount" min="1" max="10" value="5">
+        </div>
+        <div class="modal-actions">
+            <button class="secondary" onclick="closeModals()">キャンセル</button>
+            <button onclick="applyOptions()">適用する</button>
+        </div>
+    </div>
+</div>
+
 <div id="statusMessage"></div>
 
 <script>
-    const days = ['月', '火', '水', '木', '金', '土'];
-    const periods = [1, 2, 3, 4, 5];
+    let days = ['月', '火', '水', '木', '金', '土'];
+    let periods = [1, 2, 3, 4, 5];
     const MAX_PER_SLOT = 2;
 
     let blockedSlots = new Set(); // "月-1" の形式で保存
@@ -305,8 +309,29 @@
     }
 
     function init() {
+        renderDayHeader();
+        renderEntryFormOptions();
         renderTable();
         renderSettingsGrid();
+    }
+
+    function renderDayHeader() {
+        const headerRow = document.getElementById('dayHeaderRow');
+        const dayHeaders = days.map(d => `<th>${d}曜日</th>`).join('');
+        headerRow.innerHTML = `<th style="width: 80px;">時限</th>${dayHeaders}`;
+    }
+
+    function renderEntryFormOptions() {
+        const daySelect = document.getElementById('scheduleDay');
+        const periodSelect = document.getElementById('schedulePeriod');
+        const currentDay = daySelect.value;
+        const currentPeriod = periodSelect.value;
+
+        daySelect.innerHTML = days.map(d => `<option value="${d}">${d}曜日</option>`).join('');
+        periodSelect.innerHTML = periods.map(p => `<option value="${p}">${p}限</option>`).join('');
+
+        daySelect.value = days.includes(currentDay) ? currentDay : days[0];
+        periodSelect.value = periods.some(p => String(p) === currentPeriod) ? currentPeriod : String(periods[0]);
     }
 
     function renderTable() {
@@ -374,6 +399,7 @@
 
     function renderSettingsGrid() {
         const grid = document.getElementById('settingsGrid');
+        grid.style.gridTemplateColumns = `60px repeat(${days.length}, 1fr)`;
         const htmlParts = ['<div></div>']; // 左上空白
         days.forEach(d => htmlParts.push(`<div>${d}</div>`));
 
@@ -387,6 +413,59 @@
         });
 
         grid.innerHTML = htmlParts.join('');
+    }
+
+    function getValidSlotKeySet(targetDays, targetPeriods) {
+        const validKeys = new Set();
+        targetPeriods.forEach(p => targetDays.forEach(d => validKeys.add(getSlotKey(d, p))));
+        return validKeys;
+    }
+
+    function openOptionsModal() {
+        document.getElementById('optionDays').value = days.join(',');
+        document.getElementById('optionPeriodCount').value = periods.length;
+        document.getElementById('optionsModal').style.display = 'flex';
+    }
+
+    function applyOptions() {
+        const rawDays = document.getElementById('optionDays').value;
+        const periodCount = parseInt(document.getElementById('optionPeriodCount').value, 10);
+        const nextDays = [...new Set(rawDays.split(',').map(v => v.trim()).filter(Boolean))];
+
+        if (nextDays.length === 0) {
+            alert('曜日を1つ以上入力してください');
+            return;
+        }
+
+        if (!Number.isInteger(periodCount) || periodCount < 1 || periodCount > 10) {
+            alert('時限数は1から10で入力してください');
+            return;
+        }
+
+        const nextPeriods = Array.from({ length: periodCount }, (_, i) => i + 1);
+        const currentCardsBySlot = captureCardsBySlot(document.getElementById('tableBody'));
+        const nextValidKeys = getValidSlotKeySet(nextDays, nextPeriods);
+
+        let removedCount = 0;
+        currentCardsBySlot.forEach((texts, slotKey) => {
+            if (!nextValidKeys.has(slotKey)) removedCount += texts.length;
+        });
+
+        if (removedCount > 0) {
+            const ok = confirm(`変更後の範囲外になる予定が ${removedCount} 件あります。続行しますか？`);
+            if (!ok) return;
+        }
+
+        days = nextDays;
+        periods = nextPeriods;
+        blockedSlots = new Set([...blockedSlots].filter(key => nextValidKeys.has(key)));
+
+        renderDayHeader();
+        renderEntryFormOptions();
+        renderTable();
+        renderSettingsGrid();
+        closeModals();
+        showToast('表示オプションを更新しました');
     }
 
     function toggleBlock(key, isChecked) {
