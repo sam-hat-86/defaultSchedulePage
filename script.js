@@ -115,7 +115,6 @@ function renderTable() {
             zoneBySlot.set(slotKey, zone);
 
             zone.addEventListener('dragover', (e) => {
-                if (zone.classList.contains('is-black')) return;
                 const dragging = document.querySelector('.dragging');
                 if (dragging && dragging.parentElement !== zone && zone.children.length >= MAX_PER_SLOT) return;
                 e.preventDefault();
