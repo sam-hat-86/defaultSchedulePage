@@ -1,6 +1,7 @@
 let days = ['月', '火', '水', '木', '金', '土'];
 let periods = [1, 2, 3, 4, 5];
 const MAX_PER_SLOT = 2;
+let isMenuEventsBound = false;
 
 let blockedSlots = new Set(); // "月-1" の形式で保存
 
@@ -20,10 +21,51 @@ function captureCardsBySlot(container) {
 }
 
 function init() {
+    setupMenuEvents();
     renderDayHeader();
     renderEntryFormOptions();
     renderTable();
     renderSettingsGrid();
+}
+
+function toggleMoreMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('moreMenu');
+    const toggle = document.querySelector('.menu-toggle');
+    if (!menu || !toggle) return;
+
+    const shouldOpen = menu.hasAttribute('hidden');
+    if (shouldOpen) {
+        menu.removeAttribute('hidden');
+        toggle.setAttribute('aria-expanded', 'true');
+    } else {
+        closeMoreMenu();
+    }
+}
+
+function closeMoreMenu() {
+    const menu = document.getElementById('moreMenu');
+    const toggle = document.querySelector('.menu-toggle');
+    if (!menu || !toggle) return;
+    menu.setAttribute('hidden', '');
+    toggle.setAttribute('aria-expanded', 'false');
+}
+
+function setupMenuEvents() {
+    if (isMenuEventsBound) return;
+
+    document.addEventListener('click', (event) => {
+        const menuWrap = document.querySelector('.menu-wrap');
+        const menu = document.getElementById('moreMenu');
+        if (!menuWrap || !menu || menu.hasAttribute('hidden')) return;
+        if (!menuWrap.contains(event.target)) closeMoreMenu();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeMoreMenu();
+    });
+
+    isMenuEventsBound = true;
 }
 
 function renderDayHeader() {

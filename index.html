@@ -9,17 +9,22 @@
 <body>
 
 <div class="container">
-    <h1>🗓️ スケジュール管理 Pro</h1>
-
     <div class="toolbar">
-        <button onclick="openEntryModal()">+ 予定を追加</button>
-        <button class="secondary" onclick="openOptionsModal()">⚙️ オプション</button>
-        <button class="secondary" onclick="openSettingsModal()">⚙️ 黒マスの設定</button>
-        <span style="flex-grow: 1;"></span>
-        <button class="secondary" onclick="exportCSV()">保存(CSV)</button>
-        <button class="secondary" onclick="document.getElementById('csvIn').click()">読込(CSV)</button>
+        <h1 class="toolbar-title">🗓️ スケジュール管理 Pro</h1>
+        <div class="toolbar-main-actions">
+            <button onclick="openEntryModal()">+ 予定を追加</button>
+            <button class="secondary" onclick="openSettingsModal()">⚙️ 黒マス</button>
+            <div class="menu-wrap">
+                <button type="button" class="secondary menu-toggle" aria-expanded="false" aria-controls="moreMenu" onclick="toggleMoreMenu(event)">☰</button>
+                <div id="moreMenu" class="more-menu" hidden>
+                    <button type="button" class="menu-item" onclick="openOptionsModal(); closeMoreMenu();">⚙️ 表示オプション</button>
+                    <button type="button" class="menu-item" onclick="exportCSV(); closeMoreMenu();">保存(CSV)</button>
+                    <button type="button" class="menu-item" onclick="document.getElementById('csvIn').click(); closeMoreMenu();">読込(CSV)</button>
+                    <button type="button" class="menu-item" onclick="resetAll(); closeMoreMenu();">リセット</button>
+                </div>
+            </div>
+        </div>
         <input type="file" id="csvIn" hidden onchange="importCSV(event)">
-        <button style="background: #ebecf0; color: #172b4d;" onclick="resetAll()">リセット</button>
     </div>
 
     <table id="scheduleTable">
