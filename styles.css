@@ -164,6 +164,28 @@ th {
     box-sizing: border-box;
 }
 
+.option-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.option-button {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: #f7f8fa;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.option-button.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
 .modal-actions {
     display: flex;
     justify-content: flex-end;

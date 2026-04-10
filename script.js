@@ -28,21 +28,62 @@ function init() {
 
 function renderDayHeader() {
     const headerRow = document.getElementById('dayHeaderRow');
-    const dayHeaders = days.map(d => `<th>${d}曜日</th>`).join('');
+    const dayHeaders = days.map(d => `<th>${d}</th>`).join('');
     headerRow.innerHTML = `<th style="width: 80px;">時限</th>${dayHeaders}`;
 }
 
 function renderEntryFormOptions() {
-    const daySelect = document.getElementById('scheduleDay');
-    const periodSelect = document.getElementById('schedulePeriod');
-    const currentDay = daySelect.value;
-    const currentPeriod = periodSelect.value;
+    const dayInput = document.getElementById('scheduleDay');
+    const periodInput = document.getElementById('schedulePeriod');
+    const currentDay = dayInput.value;
+    const currentPeriod = periodInput.value;
 
-    daySelect.innerHTML = days.map(d => `<option value="${d}">${d}曜日</option>`).join('');
-    periodSelect.innerHTML = periods.map(p => `<option value="${p}">${p}限</option>`).join('');
+    const nextDay = days.includes(currentDay) ? currentDay : days[0];
+    const nextPeriod = periods.some(p => String(p) === currentPeriod) ? currentPeriod : String(periods[0]);
 
-    daySelect.value = days.includes(currentDay) ? currentDay : days[0];
-    periodSelect.value = periods.some(p => String(p) === currentPeriod) ? currentPeriod : String(periods[0]);
+    dayInput.value = nextDay;
+    periodInput.value = nextPeriod;
+
+    renderEntryOptionButtons('scheduleDayButtons', days, (d) => `${d}`, nextDay, (value) => {
+        dayInput.value = value;
+    });
+    renderEntryOptionButtons('schedulePeriodButtons', periods.map(String), (p) => `${p}限`, nextPeriod, (value) => {
+        periodInput.value = value;
+    });
+}
+
+function renderEntryOptionButtons(containerId, values, labelFormatter, selectedValue, onSelect) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+
+    values.forEach((value) => {
+        const button = document.createElement('button');
+        const normalizedValue = String(value);
+        button.type = 'button';
+        button.className = 'option-button';
+        button.dataset.value = normalizedValue;
+        button.textContent = labelFormatter(value);
+
+        if (normalizedValue === String(selectedValue)) {
+            button.classList.add('active');
+        }
+
+        button.onclick = () => {
+            container.querySelectorAll('.option-button').forEach((btn) => btn.classList.remove('active'));
+            button.classList.add('active');
+            onSelect(normalizedValue);
+        };
+
+        container.appendChild(button);
+    });
+}
+
+function updateEntryOptionSelection(containerId, selectedValue) {
+    const container = document.getElementById(containerId);
+    container.querySelectorAll('.option-button').forEach((button) => {
+        const isActive = button.dataset.value === String(selectedValue);
+        button.classList.toggle('active', isActive);
+    });
 }
 
 function renderTable() {
@@ -184,7 +225,7 @@ function toggleBlock(key, isChecked) {
         const [d, p] = key.split('-');
         const zone = document.querySelector(`.drop-zone[data-day="${d}"][data-period="${p}"]`);
         if (zone && zone.children.length > 0) {
-            if (!confirm("このコマには予定があります。黒マスにすると予定が消えますがよろしいですか？")) {
+            if (!confirm("このコマには予定があります。休みにすると予定が消えますがよろしいですか？")) {
                 renderSettingsGrid();
                 return;
             }
@@ -207,12 +248,18 @@ function openEntryModal(card = null) {
         document.getElementById('scheduleText').value = card.textContent;
         document.getElementById('scheduleDay').value = card.parentElement.dataset.day;
         document.getElementById('schedulePeriod').value = card.parentElement.dataset.period;
+        updateEntryOptionSelection('scheduleDayButtons', card.parentElement.dataset.day);
+        updateEntryOptionSelection('schedulePeriodButtons', card.parentElement.dataset.period);
         document.getElementById('editCardId').value = "editing";
         card.id = "target-edit";
         delBtn.style.display = "block";
     } else {
         title.textContent = "予定の追加";
         document.getElementById('scheduleText').value = "";
+        document.getElementById('scheduleDay').value = days[0];
+        document.getElementById('schedulePeriod').value = String(periods[0]);
+        updateEntryOptionSelection('scheduleDayButtons', days[0]);
+        updateEntryOptionSelection('schedulePeriodButtons', String(periods[0]));
         document.getElementById('editCardId').value = "";
         delBtn.style.display = "none";
     }
@@ -242,7 +289,7 @@ function saveSchedule() {
 
     const slotKey = `${day}-${period}`;
     if (blockedSlots.has(slotKey)) {
-        alert("その時間は休み（黒マス）に設定されています");
+        alert("その時間は休みに設定されています");
         return;
     }
 
