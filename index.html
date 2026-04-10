@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Manager Pro</title>
+    <style>
+        :root {
+            --bg: #f4f5f7;
+            --surface: #ffffff;
+            --primary: #4c9aff;
+            --header: #ebecf0;
+            --border: #dfe1e6;
+            --text: #172b4d;
+            --black-cell: #2c3e50;
+            --error: #ef4444;
+            --modal-bg: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: var(--surface);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--primary);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        button.secondary {
+            background-color: #6b778c;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            background: var(--surface);
+            border-radius: 8px;
+            overflow: hidden;
+            table-layout: fixed;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        th, td {
+            border: 1px solid var(--border);
+            padding: 0;
+            height: 120px;
+            vertical-align: top;
+            position: relative;
+        }
+
+        th {
+            background-color: var(--header);
+            height: 45px;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+
+        .period-header {
+            width: 80px;
+            background-color: var(--header);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .drop-zone {
+            height: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .drop-zone.over {
+            background-color: #e2f0ff;
+            outline: 2px dashed var(--primary);
+            outline-offset: -4px;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            padding: 10px;
+            cursor: grab;
+            border-left: 4px solid var(--primary);
+            font-size: 13px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .card:active { cursor: grabbing; }
+
+        .is-black {
+            background-color: var(--black-cell) !important;
+        }
+
+        .is-black * { display: none !important; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-bg);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal h2 { margin-top: 0; font-size: 20px; }
+
+        .form-group { margin-bottom: 15px; }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Settings Grid in Modal */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(6, 1fr);
+            gap: 5px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .settings-grid div { padding: 5px 0; }
+
+        #statusMessage {
+            position: fixed;
+            bottom: 20px;
+            background: #333;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            display: none;
+            z-index: 2000;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🗓️ スケジュール管理 Pro</h1>
+
+    <div class="toolbar">
+        <button onclick="openEntryModal()">+ 予定を追加</button>
+        <button class="secondary" onclick="openSettingsModal()">⚙️ 黒マスの設定</button>
+        <span style="flex-grow: 1;"></span>
+        <button class="secondary" onclick="exportCSV()">保存(CSV)</button>
+        <button class="secondary" onclick="document.getElementById('csvIn').click()">読込(CSV)</button>
+        <input type="file" id="csvIn" hidden onchange="importCSV(event)">
+        <button style="background: #ebecf0; color: #172b4d;" onclick="resetAll()">リセット</button>
+    </div>
+
+    <table id="scheduleTable">
+        <thead>
+            <tr>
+                <th style="width: 80px;">時限</th>
+                <th>月曜日</th><th>火曜日</th><th>水曜日</th><th>木曜日</th><th>金曜日</th><th>土曜日</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<!-- Entry Modal (Add/Edit) -->
+<div id="entryModal" class="modal-overlay">
+    <div class="modal">
+        <h2 id="entryModalTitle">予定の追加</h2>
+        <input type="hidden" id="editCardId">
+        <div class="form-group">
+            <label>内容</label>
+            <input type="text" id="scheduleText" placeholder="例: 数学A">
+        </div>
+        <div class="form-group">
+            <label>曜日</label>
+            <select id="scheduleDay">
+                <option value="月">月曜日</option>
+                <option value="火">火曜日</option>
+                <option value="水">水曜日</option>
+                <option value="木">木曜日</option>
+                <option value="金">金曜日</option>
+                <option value="土">土曜日</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>時限</label>
+            <select id="schedulePeriod">
+                <option value="1">1限</option>
+                <option value="2">2限</option>
+                <option value="3">3限</option>
+                <option value="4">4限</option>
+                <option value="5">5限</option>
+            </select>
+        </div>
+        <div class="modal-actions">
+            <button class="secondary" onclick="closeModals()">キャンセル</button>
+            <button id="deleteBtn" style="background: var(--error); display: none;" onclick="deleteCurrentCard()">削除</button>
+            <button onclick="saveSchedule()">保存する</button>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal (Black Cell) -->
+<div id="settingsModal" class="modal-overlay">
+    <div class="modal" style="width: 500px;">
+        <h2>黒マスの設定 (休み)</h2>
+        <p style="font-size: 12px; color: #666;">チェックを入れたコマは「休み」になり、予定が入りません。</p>
+        <div class="settings-grid" id="settingsGrid">
+            <!-- JSで生成 -->
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeModals()">閉じる</button>
+        </div>
+    </div>
+</div>
+
+<div id="statusMessage"></div>
+
+<script>
+    const days = ['月', '火', '水', '木', '金', '土'];
+    const periods = [1, 2, 3, 4, 5];
+    const MAX_PER_SLOT = 2;
+
+    let blockedSlots = new Set(); // "月-1" の形式で保存
+
+    function getSlotKey(day, period) {
+        return `${day}-${period}`;
+    }
+
+    function captureCardsBySlot(container) {
+        const cardsBySlot = new Map();
+        container.querySelectorAll('.drop-zone').forEach(zone => {
+            const key = getSlotKey(zone.dataset.day, zone.dataset.period);
+            const texts = [];
+            zone.querySelectorAll('.card').forEach(card => texts.push(card.textContent));
+            if (texts.length > 0) cardsBySlot.set(key, texts);
+        });
+        return cardsBySlot;
+    }
+
+    function init() {
+        renderTable();
+        renderSettingsGrid();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('tableBody');
+        const existingCardsBySlot = captureCardsBySlot(tbody);
+        const zoneBySlot = new Map();
+        const fragment = document.createDocumentFragment();
+
+        tbody.innerHTML = '';
+
+        periods.forEach(p => {
+            const tr = document.createElement('tr');
+
+            const th = document.createElement('td');
+            th.innerHTML = `<div class="period-header">${p}限</div>`;
+            tr.appendChild(th);
+
+            days.forEach(d => {
+                const td = document.createElement('td');
+                const zone = document.createElement('div');
+                zone.className = 'drop-zone';
+                zone.dataset.day = d;
+                zone.dataset.period = p;
+
+                const slotKey = getSlotKey(d, p);
+                if (blockedSlots.has(slotKey)) {
+                    zone.classList.add('is-black');
+                }
+                zoneBySlot.set(slotKey, zone);
+
+                zone.addEventListener('dragover', (e) => {
+                    if (zone.classList.contains('is-black')) return;
+                    const dragging = document.querySelector('.dragging');
+                    if (dragging && dragging.parentElement !== zone && zone.children.length >= MAX_PER_SLOT) return;
+                    e.preventDefault();
+                    zone.classList.add('over');
+                });
+
+                zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+
+                zone.addEventListener('drop', (e) => {
+                    zone.classList.remove('over');
+                    const dragging = document.querySelector('.dragging');
+                    if (dragging) {
+                        if (dragging.parentElement !== zone && zone.children.length >= MAX_PER_SLOT) return;
+                        zone.appendChild(dragging);
+                        showToast("移動しました");
+                    }
+                });
+
+                td.appendChild(zone);
+                tr.appendChild(td);
+            });
+            fragment.appendChild(tr);
+        });
+
+        tbody.appendChild(fragment);
+
+        existingCardsBySlot.forEach((texts, slotKey) => {
+            const zone = zoneBySlot.get(slotKey);
+            if (!zone) return;
+            texts.slice(0, MAX_PER_SLOT).forEach(text => createCardElement(zone, text));
+        });
+    }
+
+    function renderSettingsGrid() {
+        const grid = document.getElementById('settingsGrid');
+        const htmlParts = ['<div></div>']; // 左上空白
+        days.forEach(d => htmlParts.push(`<div>${d}</div>`));
+
+        periods.forEach(p => {
+            htmlParts.push(`<div>${p}限</div>`);
+            days.forEach(d => {
+                const key = getSlotKey(d, p);
+                const checked = blockedSlots.has(key) ? 'checked' : '';
+                htmlParts.push(`<div><input type="checkbox" ${checked} onchange="toggleBlock('${key}', this.checked)"></div>`);
+            });
+        });
+
+        grid.innerHTML = htmlParts.join('');
+    }
+
+    function toggleBlock(key, isChecked) {
+        if (isChecked) {
+            const [d, p] = key.split('-');
+            const zone = document.querySelector(`.drop-zone[data-day="${d}"][data-period="${p}"]`);
+            if (zone && zone.children.length > 0) {
+                if (!confirm("このコマには予定があります。黒マスにすると予定が消えますがよろしいですか？")) {
+                    renderSettingsGrid();
+                    return;
+                }
+            }
+            blockedSlots.add(key);
+        } else {
+            blockedSlots.delete(key);
+        }
+        renderTable();
+    }
+
+    // Modal Operations
+    function openEntryModal(card = null) {
+        const modal = document.getElementById('entryModal');
+        const title = document.getElementById('entryModalTitle');
+        const delBtn = document.getElementById('deleteBtn');
+
+        if (card) {
+            title.textContent = "予定の編集";
+            document.getElementById('scheduleText').value = card.textContent;
+            document.getElementById('scheduleDay').value = card.parentElement.dataset.day;
+            document.getElementById('schedulePeriod').value = card.parentElement.dataset.period;
+            document.getElementById('editCardId').value = "editing";
+            card.id = "target-edit";
+            delBtn.style.display = "block";
+        } else {
+            title.textContent = "予定の追加";
+            document.getElementById('scheduleText').value = "";
+            document.getElementById('editCardId').value = "";
+            delBtn.style.display = "none";
+        }
+        modal.style.display = 'flex';
+    }
+
+    function openSettingsModal() {
+        document.getElementById('settingsModal').style.display = 'flex';
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+        const editing = document.getElementById('target-edit');
+        if (editing) editing.id = "";
+    }
+
+    function saveSchedule() {
+        const text = document.getElementById('scheduleText').value.trim();
+        const day = document.getElementById('scheduleDay').value;
+        const period = document.getElementById('schedulePeriod').value;
+        const isEdit = document.getElementById('editCardId').value === "editing";
+
+        if (!text) {
+            alert("内容を入力してください");
+            return;
+        }
+
+        const slotKey = `${day}-${period}`;
+        if (blockedSlots.has(slotKey)) {
+            alert("その時間は休み（黒マス）に設定されています");
+            return;
+        }
+
+        const targetZone = document.querySelector(`.drop-zone[data-day="${day}"][data-period="${period}"]`);
+        const editingCard = document.getElementById('target-edit');
+
+        // 個数チェック（編集で同じ場所ならOK、違う場所ならチェック）
+        const currentCount = targetZone.children.length;
+        if (!isEdit && currentCount >= MAX_PER_SLOT) {
+            alert("このコマはすでに満杯です（最大2件）");
+            return;
+        }
+        if (isEdit && editingCard.parentElement !== targetZone && currentCount >= MAX_PER_SLOT) {
+            alert("移動先のコマはすでに満杯です（最大2件）");
+            return;
+        }
+
+        if (isEdit && editingCard) {
+            editingCard.textContent = text;
+            targetZone.appendChild(editingCard);
+            editingCard.id = "";
+            showToast("編集しました");
+        } else {
+            createCardElement(targetZone, text);
+            showToast("追加しました");
+        }
+
+        closeModals();
+    }
+
+    function createCardElement(parent, text) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.draggable = true;
+        card.textContent = text;
+
+        card.onclick = () => openEntryModal(card);
+
+        card.ondragstart = (e) => {
+            card.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', '');
+        };
+        card.ondragend = () => card.classList.remove('dragging');
+
+        parent.appendChild(card);
+    }
+
+    function deleteCurrentCard() {
+        const card = document.getElementById('target-edit');
+        if (card && confirm("削除しますか？")) {
+            card.remove();
+            closeModals();
+            showToast("削除しました");
+        }
+    }
+
+    // CSV
+    function exportCSV() {
+        let csv = "\uFEFFPeriod,Day,Content,IsBlocked\n";
+        document.querySelectorAll('.drop-zone').forEach(z => {
+            const isBlocked = blockedSlots.has(`${z.dataset.day}-${z.dataset.period}`) ? 1 : 0;
+            const cards = z.querySelectorAll('.card');
+            if (cards.length > 0) {
+                cards.forEach(c => {
+                    csv += `${z.dataset.period},${z.dataset.day},"${c.textContent}",${isBlocked}\n`;
+                });
+            } else {
+                csv += `${z.dataset.period},${z.dataset.day},"",${isBlocked}\n`;
+            }
+        });
+        const blob = new Blob([csv], {type: 'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'schedule.csv'; a.click();
+    }
+
+    function importCSV(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const lines = event.target.result.split('\n').slice(1);
+            blockedSlots.clear();
+            renderTable(); // 一旦クリア
+            lines.forEach(line => {
+                if (!line.trim()) return;
+                const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+                const p = parts[0].trim();
+                const d = parts[1].trim();
+                const text = parts[2].replace(/"/g, '').trim();
+                const block = parseInt(parts[3]);
+
+                const key = `${d}-${p}`;
+                if (block === 1) blockedSlots.add(key);
+
+                const zone = document.querySelector(`.drop-zone[data-day="${d}"][data-period="${p}"]`);
+                if (zone) {
+                    if (block === 1) zone.classList.add('is-black');
+                    if (text) createCardElement(zone, text);
+                }
+            });
+            renderSettingsGrid();
+            showToast("読み込み完了");
+        };
+        reader.readAsText(file);
+    }
+
+    function resetAll() {
+        if (confirm("すべてクリアしますか？")) {
+            blockedSlots.clear();
+            init();
+            showToast("リセットしました");
+        }
+    }
+
+    function showToast(msg) {
+        const t = document.getElementById('statusMessage');
+        t.textContent = msg; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 2000);
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
