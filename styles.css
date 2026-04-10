@@ -1,15 +1,15 @@
 :root {
-    --bg: #dfe8f5;
-    --surface: #f2f7ff;
-    --surface-strong: #e7f0ff;
-    --primary: #2d6ecf;
-    --primary-hover: #255eb1;
-    --header: #d8e6fb;
-    --border: #b8cde9;
-    --text: #123055;
-    --black-cell: #20354d;
+    --bg: #0a1422;
+    --surface: #122238;
+    --surface-strong: #1a2f4c;
+    --primary: #3f8cff;
+    --primary-hover: #62a1ff;
+    --header: #1a3150;
+    --border: #2b4669;
+    --text: #e6f0ff;
+    --black-cell: #060c16;
     --error: #ef4444;
-    --modal-bg: rgba(8, 28, 56, 0.48);
+    --modal-bg: rgba(2, 7, 16, 0.76);
     --space-1: 6px;
     --space-2: 10px;
     --space-3: 14px;
@@ -26,7 +26,7 @@ body {
     padding: 14px;
     font-family: sans-serif;
     color: var(--text);
-    background: radial-gradient(circle at 10% 10%, #eef5ff 0%, var(--bg) 40%, #d3e0f3 100%);
+    background: radial-gradient(circle at 15% 10%, #162c48 0%, #0d1b2d 35%, var(--bg) 100%);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -52,7 +52,7 @@ body {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    box-shadow: 0 8px 20px rgba(18, 48, 85, 0.08);
+    box-shadow: 0 10px 24px rgba(3, 8, 16, 0.42);
 }
 
 button {
@@ -67,7 +67,7 @@ button {
     transition: background-color 0.2s ease, transform 0.12s ease;
 
     &.secondary {
-        background: #4a6b95;
+        background: #2d4c73;
     }
 
     &:hover {
@@ -87,7 +87,7 @@ table {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    box-shadow: 0 10px 24px rgba(18, 48, 85, 0.1);
+    box-shadow: 0 12px 26px rgba(2, 7, 15, 0.44);
 }
 
 th,
@@ -124,7 +124,7 @@ th {
     gap: var(--space-1);
 
     &.over {
-        background: #dcecff;
+        background: #1d3859;
         outline: 2px dashed var(--primary);
         outline-offset: -4px;
     }
@@ -137,10 +137,11 @@ th {
     padding: 10px;
     font-size: 13px;
     cursor: grab;
-    background: #a5ccff;
+    color: var(--text);
+    background: #1f3959;
     border-left: 4px solid var(--primary);
     border-radius: var(--radius-sm);
-    box-shadow: 0 3px 8px rgba(18, 48, 85, 0.14);
+    box-shadow: 0 3px 8px rgba(2, 8, 16, 0.45);
 
     &:active {
         cursor: grabbing;
@@ -172,7 +173,7 @@ th {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    box-shadow: 0 14px 34px rgba(9, 32, 64, 0.24);
+    box-shadow: 0 16px 36px rgba(2, 8, 16, 0.56);
 
     & h2 {
         margin: 0 0 10px;
@@ -198,7 +199,7 @@ th {
         border: 1px solid var(--border);
         border-radius: 4px;
         color: var(--text);
-        background: #f7fbff;
+        background: #0f1f33;
     }
 }
 
@@ -251,5 +252,16 @@ th {
     padding: 10px 20px;
     border-radius: 999px;
     color: #fff;
-    background: #1d416f;
+    background: #2a548b;
+}
+
+/* Inline styles in HTML are intentionally overridden for dark-only theme */
+button[style*="background: #ebecf0"] {
+    background: #2d4c73 !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border);
+}
+
+p[style*="color: #666"] {
+    color: #b4c7e6 !important;
 }
