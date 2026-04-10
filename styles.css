@@ -94,6 +94,10 @@ body {
     box-shadow: 0 12px 26px rgba(2, 7, 15, 0.5);
 }
 
+.more-menu[hidden] {
+    display: none;
+}
+
 button.menu-item {
     width: 100%;
     text-align: left;
