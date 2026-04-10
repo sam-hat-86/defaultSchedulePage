@@ -194,10 +194,25 @@ function renderSettingsGrid() {
     const grid = document.getElementById('settingsGrid');
     grid.style.gridTemplateColumns = `60px repeat(${days.length}, 1fr)`;
     const htmlParts = ['<div></div>']; // 左上空白
-    days.forEach(d => htmlParts.push(`<div>${d}</div>`));
+
+    days.forEach(d => {
+        const checked = isDayFullyBlocked(d) ? 'checked' : '';
+        htmlParts.push(
+            `<div class="settings-label-cell settings-label-cell-col">` +
+            `<input type="checkbox" class="settings-batch-checkbox" ${checked} data-target="day" data-value="${d}" onchange="toggleBlockRange('day', '${d}', this.checked)">` +
+            `<span>${d}</span>` +
+            `</div>`
+        );
+    });
 
     periods.forEach(p => {
-        htmlParts.push(`<div>${p}限</div>`);
+        const checked = isPeriodFullyBlocked(p) ? 'checked' : '';
+        htmlParts.push(
+            `<div class="settings-label-cell settings-label-cell-row">` +
+            `<input type="checkbox" class="settings-batch-checkbox" ${checked} data-target="period" data-value="${p}" onchange="toggleBlockRange('period', ${p}, this.checked)">` +
+            `<span>${p}限</span>` +
+            `</div>`
+        );
         days.forEach(d => {
             const key = getSlotKey(d, p);
             const checked = blockedSlots.has(key) ? 'checked' : '';
@@ -206,6 +221,60 @@ function renderSettingsGrid() {
     });
 
     grid.innerHTML = htmlParts.join('');
+    syncSettingsBatchCheckboxStates();
+}
+
+function isDayFullyBlocked(day) {
+    return periods.every(period => blockedSlots.has(getSlotKey(day, period)));
+}
+
+function isPeriodFullyBlocked(period) {
+    return days.every(day => blockedSlots.has(getSlotKey(day, period)));
+}
+
+function isDayPartiallyBlocked(day) {
+    const count = periods.filter(period => blockedSlots.has(getSlotKey(day, period))).length;
+    return count > 0 && count < periods.length;
+}
+
+function isPeriodPartiallyBlocked(period) {
+    const count = days.filter(day => blockedSlots.has(getSlotKey(day, period))).length;
+    return count > 0 && count < days.length;
+}
+
+function toggleBlockRange(targetType, targetValue, isChecked) {
+    if (targetType === 'day') {
+        periods.forEach(period => {
+            const key = getSlotKey(targetValue, period);
+            if (isChecked) blockedSlots.add(key);
+            else blockedSlots.delete(key);
+        });
+    } else {
+        days.forEach(day => {
+            const key = getSlotKey(day, targetValue);
+            if (isChecked) blockedSlots.add(key);
+            else blockedSlots.delete(key);
+        });
+    }
+
+    renderTable();
+    renderSettingsGrid();
+}
+
+function syncSettingsBatchCheckboxStates() {
+    const dayCheckboxes = document.querySelectorAll('.settings-batch-checkbox[data-target="day"]');
+    dayCheckboxes.forEach(checkbox => {
+        const day = checkbox.dataset.value;
+        checkbox.checked = isDayFullyBlocked(day);
+        checkbox.indeterminate = isDayPartiallyBlocked(day);
+    });
+
+    const periodCheckboxes = document.querySelectorAll('.settings-batch-checkbox[data-target="period"]');
+    periodCheckboxes.forEach(checkbox => {
+        const period = Number(checkbox.dataset.value);
+        checkbox.checked = isPeriodFullyBlocked(period);
+        checkbox.indeterminate = isPeriodPartiallyBlocked(period);
+    });
 }
 
 function getValidSlotKeySet(targetDays, targetPeriods) {

@@ -309,12 +309,49 @@ th {
     }
 }
 
+.settings-label-cell {
+    gap: 8px;
+    padding: 0 8px;
+    justify-content: flex-start !important;
+    text-align: left;
+    font-weight: 600;
+}
+
+.settings-label-cell-col {
+    justify-content: center !important;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.settings-label-cell-row {
+    justify-content: center !important;
+}
+
 .settings-grid input[type="checkbox"] {
     width: 20px;
     height: 20px;
     margin: 0;
     cursor: pointer;
     accent-color: var(--primary);
+}
+
+.settings-label-cell .settings-grid input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+}
+
+.settings-label-cell-col input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
+.settings-label-cell-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+}
+
+.settings-label-cell span {
+    line-height: 1;
 }
 
 .settings-grid input[type="checkbox"]:hover {
