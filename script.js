@@ -263,14 +263,6 @@ function applyOptions() {
 
 function toggleBlock(key, isChecked) {
     if (isChecked) {
-        const [d, p] = key.split('-');
-        const zone = document.querySelector(`.drop-zone[data-day="${d}"][data-period="${p}"]`);
-        if (zone && zone.children.length > 0) {
-            if (!confirm("このコマには予定があります。休みにすると予定が消えますがよろしいですか？")) {
-                renderSettingsGrid();
-                return;
-            }
-        }
         blockedSlots.add(key);
     } else {
         blockedSlots.delete(key);
