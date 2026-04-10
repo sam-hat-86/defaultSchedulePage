@@ -149,7 +149,7 @@ table {
 th,
 td {
     padding: 0;
-    height: 120px;
+    height: 100px;
     border: 1px solid var(--border);
     vertical-align: top;
     position: relative;
